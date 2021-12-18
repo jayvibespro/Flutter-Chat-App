@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1015913646278",
+    "project_id": "chat-yuyu",
+    "storage_bucket": "chat-yuyu.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1015913646278:android:e9d81d03cdcd04a1296fc7",
+        "android_client_info": {
+          "package_name": "com.jaycode.chatyoyo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1015913646278-jt8u92tdhveoq6q50b09to001oh2p9su.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0tl2u-HiBqIboTGIE73ZrnMX62R23qrE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1015913646278-jt8u92tdhveoq6q50b09to001oh2p9su.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
