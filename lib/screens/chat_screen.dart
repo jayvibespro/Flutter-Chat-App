@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flash_chat/constants.dart';
 import 'package:flutter/material.dart';
 
@@ -8,6 +10,35 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  final _firestore = FirebaseFirestore.instance;
+  final _auth = FirebaseAuth.instance;
+  User loggedInUser;
+  String messageText;
+
+  @override
+  void initState() {
+    super.initState();
+    getCurrentUser();
+  }
+
+  void getCurrentUser() async {
+    try {
+      final user = await _auth.currentUser;
+      if (user != null) {
+        loggedInUser = user;
+        print(loggedInUser.email);
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  void messagesStream() async {
+    await for (var snapshot in _firestore.collection('messages').snapshots()) {
+      for (var massage in snapshot.docs) {}
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -17,7 +48,8 @@ class _ChatScreenState extends State<ChatScreen> {
           IconButton(
               icon: Icon(Icons.close),
               onPressed: () {
-                //Implement logout functionality
+                _auth.signOut();
+                Navigator.pop(context);
               }),
         ],
         title: Text('⚡️Chat'),
@@ -28,6 +60,53 @@ class _ChatScreenState extends State<ChatScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+//            StreamBuilder<QuerySnapshot>(
+//              stream: _firestore.collection('messages').snapshots(),
+//              builder: (context, snapshot) {
+//                if (!snapshot.hasData) {
+//                  return Center(
+//                    child: CircularProgressIndicator(),
+//                  );
+//                }
+//                final messages = snapshot.data.docs;
+//                List<Text> messageWidgets = [];
+//                for (var message in messages) {
+//                  final messageText = message.data('sender');
+//                  final messageSender = message.data('text');
+//                  final messageWidget =
+//                      Text('$messageText from $messageSender');
+//                  messageWidgets.add(messageWidget);
+//                }
+//                return Column(
+//                  children: [messageWidgets],
+//                );
+//              },
+//            ),
+            StreamBuilder(
+              stream: _firestore.collection('messages').snapshots(),
+              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+//                if (!snapshot.hasData) {
+//                  return Center(
+//                    child: CircularProgressIndicator(),
+//                  );
+//                }
+                return Expanded(
+                  child: ListView(
+//                        shrinkWrap: true,
+                    children: snapshot.data.docs.map((doc) {
+                      return Container(
+                        width: MediaQuery.of(context).size.width / 1.2,
+                        height: MediaQuery.of(context).size.height / 6,
+                        child: Text(
+                          "text" + doc['text'],
+                          style: TextStyle(color: Colors.black),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                );
+              },
+            ),
             Container(
               decoration: kMessageContainerDecoration,
               child: Row(
@@ -36,14 +115,18 @@ class _ChatScreenState extends State<ChatScreen> {
                   Expanded(
                     child: TextField(
                       onChanged: (value) {
-                        //Do something with the user input.
+                        messageText = value;
                       },
                       decoration: kMessageTextFieldDecoration,
                     ),
                   ),
                   TextButton(
                     onPressed: () {
-                      //Implement send functionality.
+                      messagesStream();
+                      _firestore.collection('messages').add({
+                        'text': messageText,
+                        'sender': loggedInUser.email,
+                      });
                     },
                     child: Text(
                       'Send',
