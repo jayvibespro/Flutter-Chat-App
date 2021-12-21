@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flash_chat/constants.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+User loggedInUser;
 
 class ChatScreen extends StatefulWidget {
   static String id = 'chat_screen';
@@ -10,13 +13,14 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  TextEditingController messageClearer = TextEditingController();
   final _firestore = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
-  User loggedInUser;
   String messageText;
 
   @override
   void initState() {
+    SystemChannels.textInput.invokeMethod('TextInput.hide');
     super.initState();
     getCurrentUser();
   }
@@ -26,7 +30,6 @@ class _ChatScreenState extends State<ChatScreen> {
       final user = await _auth.currentUser;
       if (user != null) {
         loggedInUser = user;
-        print(loggedInUser.email);
       }
     } catch (e) {
       print(e);
@@ -45,8 +48,11 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         leading: null,
         actions: <Widget>[
-          IconButton(
-              icon: Icon(Icons.close),
+          TextButton(
+              child: Text(
+                'LogOut',
+                style: TextStyle(fontSize: 18.0, color: Colors.white),
+              ),
               onPressed: () {
                 _auth.signOut();
                 Navigator.pop(context);
@@ -56,87 +62,133 @@ class _ChatScreenState extends State<ChatScreen> {
         backgroundColor: Colors.lightBlueAccent,
       ),
       body: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-//            StreamBuilder<QuerySnapshot>(
-//              stream: _firestore.collection('messages').snapshots(),
-//              builder: (context, snapshot) {
-//                if (!snapshot.hasData) {
-//                  return Center(
-//                    child: CircularProgressIndicator(),
-//                  );
-//                }
-//                final messages = snapshot.data.docs;
-//                List<Text> messageWidgets = [];
-//                for (var message in messages) {
-//                  final messageText = message.data('sender');
-//                  final messageSender = message.data('text');
-//                  final messageWidget =
-//                      Text('$messageText from $messageSender');
-//                  messageWidgets.add(messageWidget);
-//                }
-//                return Column(
-//                  children: [messageWidgets],
-//                );
-//              },
-//            ),
-            StreamBuilder(
-              stream: _firestore.collection('messages').snapshots(),
-              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-//                if (!snapshot.hasData) {
-//                  return Center(
-//                    child: CircularProgressIndicator(),
-//                  );
-//                }
-                return Expanded(
-                  child: ListView(
-//                        shrinkWrap: true,
-                    children: snapshot.data.docs.map((doc) {
-                      return Container(
-                        width: MediaQuery.of(context).size.width / 1.2,
-                        height: MediaQuery.of(context).size.height / 6,
-                        child: Text(
-                          "text" + doc['text'],
-                          style: TextStyle(color: Colors.black),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                );
-              },
-            ),
-            Container(
-              decoration: kMessageContainerDecoration,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  Expanded(
-                    child: TextField(
-                      onChanged: (value) {
-                        messageText = value;
-                      },
-                      decoration: kMessageTextFieldDecoration,
+        child: GestureDetector(
+          onTap: () {
+            FocusScope.of(context).unfocus();
+          },
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              StreamBuilder(
+                stream: _firestore
+                    .collection('messages')
+                    .orderBy('createdAt', descending: true)
+                    .snapshots(),
+                builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (!snapshot.hasData) {
+                    return Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                  return Flexible(
+                    child: ListView(
+                      reverse: true,
+                      scrollDirection: Axis.vertical,
+                      shrinkWrap: true,
+                      children: snapshot.data.docs.map((doc) {
+                        final currentUser = loggedInUser.email;
+                        final sender = doc['sender'];
+                        final bool isMe = currentUser == sender;
+                        print(isMe);
+                        return Padding(
+                          padding: const EdgeInsets.all(10.0),
+                          child: Column(
+                            crossAxisAlignment: isMe
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                (doc['sender']),
+                                style: TextStyle(
+                                    color: Colors.black54, fontSize: 12),
+                              ),
+                              Material(
+                                borderRadius: isMe
+                                    ? BorderRadius.only(
+                                        bottomLeft: Radius.circular(30.0),
+                                        topLeft: Radius.circular(30.0),
+                                        bottomRight: Radius.circular(30.0),
+                                      )
+                                    : BorderRadius.only(
+                                        bottomLeft: Radius.circular(30.0),
+                                        bottomRight: Radius.circular(30.0),
+                                        topRight: Radius.circular(30.0),
+                                      ),
+                                color: isMe
+                                    ? Colors.lightBlueAccent
+                                    : Colors.white,
+                                elevation: 5,
+                                child: Column(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(10.0),
+                                      child: Text(
+                                        doc['text'],
+                                        style: TextStyle(
+                                            color: isMe
+                                                ? Colors.white
+                                                : Colors.black54),
+                                      ),
+                                    ),
+                                    Text(
+                                      doc['createdAt'].toDate().toString(),
+                                      style: TextStyle(fontSize: 10.0),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
                     ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      messagesStream();
-                      _firestore.collection('messages').add({
-                        'text': messageText,
-                        'sender': loggedInUser.email,
-                      });
-                    },
-                    child: Text(
-                      'Send',
-                      style: kSendButtonTextStyle,
-                    ),
-                  ),
-                ],
+                  );
+                },
               ),
-            ),
-          ],
+              Container(
+                decoration: kMessageContainerDecoration,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Expanded(
+                      child: TextField(
+                        minLines: 1,
+                        maxLines: 5,
+                        controller: messageClearer,
+                        onChanged: (value) {
+                          messageText = value;
+                        },
+                        decoration: kMessageTextFieldDecoration,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        messagesStream();
+                        await _firestore.collection('messages').add({
+                          'text': messageText,
+                          'sender': loggedInUser.email,
+                          'createdAt': FieldValue.serverTimestamp(),
+                        });
+                        messageClearer.clear();
+                        FocusScope.of(context).unfocus();
+                      },
+                      child: CircleAvatar(
+                        radius: 24.0,
+                        backgroundColor: Colors.lightBlue,
+                        child: Center(
+                          child: Icon(
+                            Icons.send,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

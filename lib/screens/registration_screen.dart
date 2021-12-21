@@ -13,6 +13,9 @@ class RegistrationScreen extends StatefulWidget {
 }
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+
   final _auth = FirebaseAuth.instance;
   String email = '';
   String password = '';
@@ -29,12 +32,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Hero(
-                tag: 'AnimatedLogo',
-                child: Container(
-                  height: 200.0,
-                  child: Image.asset('images/logo.png'),
+            children: [
+              Flexible(
+                child: Hero(
+                  tag: 'AnimatedLogo',
+                  child: Container(
+                    height: 200.0,
+                    child: Image.asset('images/logo.png'),
+                  ),
                 ),
               ),
               SizedBox(
