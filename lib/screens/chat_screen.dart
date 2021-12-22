@@ -76,6 +76,10 @@ class _ChatScreenState extends State<ChatScreen> {
                     .orderBy('createdAt', descending: true)
                     .snapshots(),
                 builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  Timer(const Duration(seconds: 5), (){ 
+                      setState(() {
+                      print(snapshot.data);
+                          });});
                   if (!snapshot.hasData) {
                     return Center(
                       child: CircularProgressIndicator(),
